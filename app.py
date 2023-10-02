@@ -261,8 +261,8 @@ def handle_move(player, objects):
     keys = pygame.key.get_pressed()
 
     player.x_vel = 0
-    collide_left = collide(player, objects, -PLAYER_VEL * 2)
-    collide_right = collide(player, objects, PLAYER_VEL * 2)
+    collide_left = collide(player, objects, -PLAYER_VEL * 3)
+    collide_right = collide(player, objects, PLAYER_VEL * 3)
 
     if keys[pygame.K_LEFT] and not collide_left:
         player.move_left(PLAYER_VEL)
@@ -284,19 +284,74 @@ def main(window):
     block_size = 96
 
     player = Player(100, 100, 50, 50)
-    fire = Fire(100, HEIGHT - block_size - 64, 16, 32)
+
+    # Fires
+    fire = Fire(200, HEIGHT - block_size - 64, 16, 32)
+    fire1 = Fire(600, HEIGHT - block_size - 64, 16, 32)
+    fire2 = Fire(1100, HEIGHT - block_size - 64, 16, 32)
+    fire3 = Fire(1170, HEIGHT - block_size - 64, 16, 32)
     fire.on()
+    fire1.on()
+    fire2.on()
+    fire3.on()
+
+
+
     floor = [Block(i * block_size, HEIGHT - block_size, block_size)
              for i in range((-WIDTH * 2) // block_size, (WIDTH * 4) // block_size)]
-    objects = [*floor, Block(0, HEIGHT - block_size * 2, block_size),
-               Block(block_size * 3, HEIGHT - block_size * 4, block_size), fire]
+    objects = []
 
+    
     offset_x = 0
     scroll_area_width = 200
+
+    def create_section_2(x, y, size):
+        section_blocks = [
+          Block(x, y, size),
+          Block(x + size, y, size)
+    ]
+        return section_blocks
+
+# Function to create a section with 3 blocks
+    def create_section_3(x, y, size):
+        section_blocks = [
+          Block(x, y, size),
+          Block(x + size, y, size),
+          Block(x + 2 * size, y, size)
+    ]
+        return section_blocks
+
+# Function to create a section with 4 blocks
+    def create_section_4(x, y, size):
+        section_blocks = [
+          Block(x, y, size),
+          Block(x + size, y, size),
+          Block(x + 2 * size, y, size),
+          Block(x + 3 * size, y, size)
+    ]
+        return section_blocks
+
 
     run = True
     while run:
         clock.tick(FPS)
+
+        objects.clear()
+
+         # Add sections of blocks
+        section1_blocks = create_section_2(300, 400, block_size)
+        section2_blocks = create_section_3(800, 320, block_size)
+        section3_blocks = create_section_4(1300, 400, block_size)
+
+        # Extend the 'objects' list 
+        objects.extend(section1_blocks)
+        objects.extend(section2_blocks)
+        objects.extend(section3_blocks)
+
+        objects.extend(floor)
+        objects.extend([Block(50, HEIGHT - block_size * 2, block_size), fire, fire1, fire2, fire3])
+
+
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -308,13 +363,26 @@ def main(window):
                     player.jump()
 
         player.loop(FPS)
-        fire.loop()
+
+        # animate fires
+        for obj in objects:
+            if isinstance(obj, Fire):
+                obj.loop()
+        
         handle_move(player, objects)
         draw(window, background, bg_image, player, objects, offset_x)
 
         if ((player.rect.right - offset_x >= WIDTH - scroll_area_width) and player.x_vel > 0) or (
                 (player.rect.left - offset_x <= scroll_area_width) and player.x_vel < 0):
             offset_x += player.x_vel
+
+       
+
+        
+        # block1 = Block(300, 300, block_size)
+        # block2 = Block(400, 300, block_size)
+
+        # objects.extend([block1, block2])
 
     pygame.quit()
     quit()
