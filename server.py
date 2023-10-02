@@ -1,5 +1,6 @@
 import socket
 import threading
+import json
 
 # Initialise the server socket
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -27,12 +28,15 @@ def handle_client(client_socket, address):
             print(f"Connection from {address} closed")
             break
 
-        # TODO Deserialize recieved data and update the game state
+        # Deserialize recieved data and update the game state
+        json_data = data.decode("utf-8")
+        client_state = json.loads(json_data)
 
-        # TODO Serialoze the game state and send it back to the client
+        # TODO Update the game_state based on client_state
 
-        # For Demonstration, echoing the received data
-        client_socket.send(data)
+        # Serialize the game state and send it back to the client
+        json_reply = json.dumps(game_state)
+        client_socket.send(str.encode(json_reply))
 
     client_socket.close()
 
