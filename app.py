@@ -290,10 +290,14 @@ def main(window):
     fire1 = Fire(600, HEIGHT - block_size - 64, 16, 32)
     fire2 = Fire(1100, HEIGHT - block_size - 64, 16, 32)
     fire3 = Fire(1170, HEIGHT - block_size - 64, 16, 32)
+    fire4 = Fire(1320, 400 - 64, 16, 32)
+    fire5 = Fire(1320 + block_size * 3, 400 - 64, 16, 32)
     fire.on()
     fire1.on()
     fire2.on()
     fire3.on()
+    fire4.on()
+    fire5.on()
 
 
 
@@ -361,7 +365,7 @@ def main(window):
         objects.extend(section_vertical)
 
         objects.extend(floor)
-        objects.extend([Block(-200, HEIGHT - block_size * 2, block_size), fire, fire1, fire2, fire3])
+        objects.extend([Block(-200, HEIGHT - block_size * 2, block_size), fire, fire1, fire2, fire3, fire4, fire5])
 
 
 
@@ -389,13 +393,7 @@ def main(window):
             offset_x += player.x_vel
 
        
-
-        
-        # block1 = Block(300, 300, block_size)
-        # block2 = Block(400, 300, block_size)
-
-        # objects.extend([block1, block2])
-
+     
     pygame.quit()
     quit()
 
