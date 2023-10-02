@@ -7,7 +7,7 @@ server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 # bind the socket to an address and port
 host = "locahost"
 port = 12345
-server_socket.bind(host, port)
+server_socket.bind((host, port))
 
 # start listening for incomming connections
 server_socket.listen()
