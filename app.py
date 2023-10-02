@@ -330,6 +330,16 @@ def main(window):
           Block(x + 3 * size, y, size)
     ]
         return section_blocks
+    
+# Function to create a vertical section
+    def create_vertical_section(x, y, size):
+        section_blocks = [
+          Block(x, y, size),
+          Block(x, y - size, size),
+          Block(x, y - 2 * size, size),
+          Block(x, y - 3 * size, size)
+    ]
+        return section_blocks
 
 
     run = True
@@ -342,14 +352,16 @@ def main(window):
         section1_blocks = create_section_2(300, 400, block_size)
         section2_blocks = create_section_3(800, 320, block_size)
         section3_blocks = create_section_4(1300, 400, block_size)
+        section_vertical = create_vertical_section(50, HEIGHT - block_size * 2, block_size)
 
         # Extend the 'objects' list 
         objects.extend(section1_blocks)
         objects.extend(section2_blocks)
         objects.extend(section3_blocks)
+        objects.extend(section_vertical)
 
         objects.extend(floor)
-        objects.extend([Block(50, HEIGHT - block_size * 2, block_size), fire, fire1, fire2, fire3])
+        objects.extend([Block(-200, HEIGHT - block_size * 2, block_size), fire, fire1, fire2, fire3])
 
 
 
