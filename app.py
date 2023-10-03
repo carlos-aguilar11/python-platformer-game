@@ -45,10 +45,18 @@ def load_sprite_sheets(dir1, dir2, width, height, direction=False):
 
 
 def get_block(size):
-    path = join("assets", "Terrain", "Terrain.png")
+    path = join("assets", "Extra", "Box.png")
     image = pygame.image.load(path).convert_alpha()
     surface = pygame.Surface((size, size), pygame.SRCALPHA, 32)
-    rect = pygame.Rect(272, 64, size, size)
+    rect = pygame.Rect(0, 0, size, size)
+    surface.blit(image, (0, 0), rect)
+    return pygame.transform.scale2x(surface)
+
+def get_floor(size):
+    path = join("assets", "Extra", "Grass.png")
+    image = pygame.image.load(path).convert_alpha()
+    surface = pygame.Surface((size, size), pygame.SRCALPHA, 32)
+    rect = pygame.Rect(0, 0, size, size)
     surface.blit(image, (0, 0), rect)
     return pygame.transform.scale2x(surface)
 
@@ -163,12 +171,19 @@ class Object(pygame.sprite.Sprite):
         win.blit(self.image, (self.rect.x - offset_x, self.rect.y))
 
 
+class Floor(Object):
+    def __init__(self, x, y, size):
+        super().__init__(x, y, size, size)
+        block = get_floor(size)
+        self.image.blit(block, (0, 0))
+        self.mask = pygame.mask.from_surface(self.image)
+
 class Block(Object):
     def __init__(self, x, y, size):
         super().__init__(x, y, size, size)
         block = get_block(size)
         self.image.blit(block, (0, 0))
-        self.mask = pygame.mask.from_surface(self.image)
+        self.mask = pygame.mask.from_surface(self.image)        
 
 
 class Fire(Object):
@@ -301,7 +316,7 @@ def main(window):
 
 
 
-    floor = [Block(i * block_size, HEIGHT - block_size, block_size)
+    floor = [Floor(i * block_size, HEIGHT - block_size, block_size)
              for i in range((-WIDTH * 2) // block_size, (WIDTH * 4) // block_size)]
     objects = []
 
