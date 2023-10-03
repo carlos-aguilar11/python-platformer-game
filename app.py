@@ -380,7 +380,10 @@ def main(window):
         objects.extend(section_vertical)
 
         objects.extend(floor)
-        objects.extend([Block(-200, HEIGHT - block_size * 2, block_size), fire, fire1, fire2, fire3, fire4, fire5])
+        objects.extend([Block(-400, HEIGHT - block_size * 2, block_size), 
+                        Block(-200, HEIGHT - block_size * 3, block_size),
+                        Block(1800, HEIGHT - block_size * 3, block_size),  
+                        fire, fire1, fire2, fire3, fire4, fire5])
 
 
 
