@@ -6,6 +6,7 @@ import socket
 import json
 from os import listdir
 from os.path import isfile, join
+from client import connect_to_server, send_game_state, receive_game_state
 
 pygame.init()
 
@@ -233,10 +234,7 @@ def handle_move(player, objects):
 
 
 def main(window):
-    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    host = "localhost"
-    port = 12345
-    client_socket.connect((host, port))
+    client_socket = connect_to_server()
 
     clock = pygame.time.Clock()
     background, bg_image = get_background("Purple.png")
@@ -271,19 +269,13 @@ def main(window):
                 if event.key == pygame.K_SPACE and player.jump_count < 2:
                     player.jump()
         # Send game state to sever
-        player_state = {"x": player.rect.x, "y": player.rect.y}
-        serialized_state = json.dumps(player_state)
-        try:
-            client_socket.send(serialized_state.encode("utf-8"))
-        except socket.error as error:
-            print(f"Send failed: {error}")
+        send_game_state(client_socket, player.rect.x, player.rect.y)
 
         # Receive and Update Game State from Server
-        received_data = client_socket.recv(1024).decode("utf-8")
-        updated_state = json.loads(received_data)
+        updated_x, updated_y = receive_game_state(client_socket)
 
-        player.rect.x = updated_state["x"]
-        player.rect.y = updated_state["y"]
+        player.rect.x = updated_x
+        player.rect.y = updated_y
 
         player.loop(FPS)
         handle_move(player, objects)
