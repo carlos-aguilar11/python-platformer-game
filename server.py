@@ -53,9 +53,6 @@ def handle_client(client_socket, address):
             json_reply = json.dumps({"game_state": game_state, "player_id": player_id})
             client_socket.send(json_reply.encode("utf-8"))
 
-            print(f"Received client_state: {client_state}")
-            print(f"Sending game_state: {game_state}")
-
         except Exception as error:
             print(f"An error occurred: {error}")
             break
