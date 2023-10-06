@@ -60,6 +60,14 @@ def get_floor(size):
     surface.blit(image, (0, 0), rect)
     return pygame.transform.scale2x(surface)
 
+def get_tree(size):
+    path = join("assets", "Extra", "Tree.png")
+    image = pygame.image.load(path).convert_alpha()
+    surface = pygame.Surface((size, size), pygame.SRCALPHA, 32)
+    rect = pygame.Rect(0, 0, size, size)
+    surface.blit(image, (0, 0), rect)
+    return surface
+
 
 class Player(pygame.sprite.Sprite):
     COLOR = (255, 0, 0)
@@ -183,8 +191,13 @@ class Block(Object):
         super().__init__(x, y, size, size)
         block = get_block(size)
         self.image.blit(block, (0, 0))
-        self.mask = pygame.mask.from_surface(self.image)        
+        self.mask = pygame.mask.from_surface(self.image)  
 
+class Tree(Object):
+    def __init__(self, x, y, size):
+        super().__init__(x, y, size, size)
+        self.image = get_tree(size)
+        self.mask = pygame.mask.from_surface(self.image)
 
 class Fire(Object):
     ANIMATION_DELAY = 3
@@ -318,6 +331,10 @@ def main(window):
     fire6.on()
     fire7.on()
 
+    tree = Tree(3500, HEIGHT - block_size - 192, 232)
+    tree2 = Tree(3900, HEIGHT - block_size - 192, 232)
+
+
     
 
     floor = [Floor(i * block_size, HEIGHT - block_size, block_size)
@@ -327,12 +344,12 @@ def main(window):
     floor2 = [Floor(last_x - 1550 + i * block_size, HEIGHT - block_size, block_size)
               for i in range(10)]
     
-    lastblock_floor2 = last_x - 1550 + (10 * block_size)  # Assuming 10 blocks in floor2
+    lastblock_floor2 = last_x - 1550 + (10 * block_size) 
 
-# Add the desired spacing (e.g., 450 pixels) to the rightmost point for the third section
+# Add the desired spacing 
     firstblock_floor3 = lastblock_floor2 + 1250
 
-# Create the third section of floor blocks (floor3)
+# Create the third section of floor blocks
     floor3 = [Floor(firstblock_floor3 + i * block_size, HEIGHT - block_size, block_size)
           for i in range(10)]
     objects = []
@@ -414,7 +431,7 @@ def main(window):
                         Block(2600, HEIGHT - block_size * 3, block_size),
                         Block(5300, HEIGHT - block_size // 2, block_size),
                         
-                        fire, fire1, fire2, fire3, fire4, fire5, fire6, fire7])
+                        fire, fire1, fire2, fire3, fire4, fire5, fire6, fire7, tree, tree2])
 
 
 
@@ -433,7 +450,8 @@ def main(window):
         for obj in objects:
             if isinstance(obj, Fire):
                 obj.loop()
-        
+                
+                
         handle_move(player, objects)
         draw(window, background, bg_image, player, objects, offset_x)
 
