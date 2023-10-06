@@ -75,6 +75,7 @@ class Player(pygame.sprite.Sprite):
         self.animation_count = 0
         self.fall_count = 0
         self.jump_count = 0
+        self.sprite = self.SPRITES["idle_right"][0]
 
     def jump(self):
         self.y_vel = -self.GRAVITY * 8
@@ -176,14 +177,15 @@ def get_background(name):
     return tiles, image
 
 
-def draw(window, background, bg_image, player, objects, offset_x):
+def draw(window, background, bg_image, players, objects, offset_x):
     for tile in background:
         window.blit(bg_image, tile)
 
     for obj in objects:
         obj.draw(window, offset_x)
 
-    player.draw(window, offset_x)
+    for player in players:
+        player.draw(window, offset_x)
 
     pygame.display.update()
 
@@ -242,6 +244,8 @@ def main(window):
     block_size = 96
 
     player = Player(100, 100, 50, 50)
+    all_players = {player_id: player}
+
     floor = [
         Block(i * block_size, HEIGHT - block_size, block_size)
         for i in range(-WIDTH // block_size, WIDTH * 2 // block_size)
@@ -272,14 +276,20 @@ def main(window):
         send_game_state(client_socket, player.rect.x, player.rect.y)
 
         # Receive and Update Game State from Server
-        game_state, received_player_id = receive_game_state(client_socket)
-        if received_player_id == player_id:
-            player.rect.x = game_state[player_id]["x"]
-            player.rect.y = game_state[player_id]["y"]
+        game_state, _ = receive_game_state(client_socket)
+        for p_id, coords in game_state.items():
+            if p_id in all_players:
+                all_players[p_id].rect.x = coords["x"]
+                all_players[p_id].rect.y = coords["y"]
+            else:
+                new_player = Player(coords["x"], coords["y"], 50, 50)
+                all_players[p_id] = new_player
 
         player.loop(FPS)
         handle_move(player, objects)
-        draw(window, background, bg_image, player, objects, offset_x)
+        draw(
+            window, background, bg_image, list(all_players.values()), objects, offset_x
+        )
 
         if (
             (
