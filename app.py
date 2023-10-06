@@ -229,6 +229,37 @@ class Fire(Object):
         if self.animation_count // self.ANIMATION_DELAY > len(sprites):
             self.animation_count = 0
 
+class TrapPlatform(Object):
+    ANIMATION_DELAY = 3
+
+    def __init__(self, x, y, width, height):
+        super().__init__(x, y, width, height, "trap")
+        self.trap_images = load_sprite_sheets("Traps", "Platforms", width, height)
+        self.image = self.trap_images["off"][0]
+        self.mask = pygame.mask.from_surface(self.image)
+        self.animation_count = 0
+        self.animation_name = "off"
+
+    def open(self):
+        self.animation_name = "on"
+
+    def close(self):
+        self.animation_name = "off"
+
+    def loop(self):
+        sprites = self.trap_images[self.animation_name]
+        sprite_index = (self.animation_count //
+                        self.ANIMATION_DELAY) % len(sprites)
+        self.image = sprites[sprite_index]
+        self.animation_count += 1
+
+        self.rect = self.image.get_rect(topleft=(self.rect.x, self.rect.y))
+        self.mask = pygame.mask.from_surface(self.image)
+
+        if self.animation_count // self.ANIMATION_DELAY > len(sprites):
+            self.animation_count = 0
+
+
 
 def get_background(name):
     image = pygame.image.load(join("assets", "Background", name))
@@ -331,6 +362,12 @@ def main(window):
     fire6.on()
     fire7.on()
 
+    trap1 = TrapPlatform(-300, 200 - 64, 32, 8)
+    trap2 = TrapPlatform(-600, 600 - 64, 32, 8)
+ 
+    trap1.open()
+    trap2.close()
+
     tree = Tree(3500, HEIGHT - block_size - 192, 232)
     tree2 = Tree(3900, HEIGHT - block_size - 192, 232)
 
@@ -431,7 +468,7 @@ def main(window):
                         Block(2600, HEIGHT - block_size * 3, block_size),
                         Block(5300, HEIGHT - block_size // 2, block_size),
                         
-                        fire, fire1, fire2, fire3, fire4, fire5, fire6, fire7, tree, tree2])
+                        fire, fire1, fire2, fire3, fire4, fire5, fire6, fire7, trap1, trap2, tree, tree2])
 
 
 
@@ -449,6 +486,10 @@ def main(window):
         # animate fires
         for obj in objects:
             if isinstance(obj, Fire):
+                obj.loop()
+
+        for obj in objects:
+            if isinstance(obj, TrapPlatform):
                 obj.loop()
                 
                 
