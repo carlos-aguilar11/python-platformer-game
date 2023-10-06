@@ -52,6 +52,14 @@ def get_block(size):
     surface.blit(image, (0, 0), rect)
     return pygame.transform.scale2x(surface)
 
+def get_icy_block(size):
+    path = join("assets", "Extra", "Surface.png")
+    image = pygame.image.load(path).convert_alpha()
+    surface = pygame.Surface((size, size), pygame.SRCALPHA, 32)
+    rect = pygame.Rect(128, 0, size, size)
+    surface.blit(image, (0, 0), rect)
+    return pygame.transform.scale2x(surface)
+
 def get_floor(size):
     path = join("assets", "Extra", "Grass.png")
     image = pygame.image.load(path).convert_alpha()
@@ -193,6 +201,13 @@ class Block(Object):
         self.image.blit(block, (0, 0))
         self.mask = pygame.mask.from_surface(self.image)  
 
+class IceBlock(Object):
+   def __init__(self, x, y, size):
+        super().__init__(x, y, size, size)
+        block = get_icy_block(size)
+        self.image.blit(block, (0, 0))
+        self.mask = pygame.mask.from_surface(self.image)  
+
 class Tree(Object):
     def __init__(self, x, y, size):
         super().__init__(x, y, size, size)
@@ -229,37 +244,6 @@ class Fire(Object):
         if self.animation_count // self.ANIMATION_DELAY > len(sprites):
             self.animation_count = 0
 
-class TrapPlatform(Object):
-    ANIMATION_DELAY = 3
-
-    def __init__(self, x, y, width, height):
-        super().__init__(x, y, width, height, "trap")
-        self.trap_images = load_sprite_sheets("Traps", "Platforms", width, height)
-        self.image = self.trap_images["off"][0]
-        self.mask = pygame.mask.from_surface(self.image)
-        self.animation_count = 0
-        self.animation_name = "off"
-
-    def open(self):
-        self.animation_name = "on"
-
-    def close(self):
-        self.animation_name = "off"
-
-    def loop(self):
-        sprites = self.trap_images[self.animation_name]
-        sprite_index = (self.animation_count //
-                        self.ANIMATION_DELAY) % len(sprites)
-        self.image = sprites[sprite_index]
-        self.animation_count += 1
-
-        self.rect = self.image.get_rect(topleft=(self.rect.x, self.rect.y))
-        self.mask = pygame.mask.from_surface(self.image)
-
-        if self.animation_count // self.ANIMATION_DELAY > len(sprites):
-            self.animation_count = 0
-
-
 
 def get_background(name):
     image = pygame.image.load(join("assets", "Background", name))
@@ -288,6 +272,8 @@ def draw(window, background, bg_image, player, objects, offset_x):
 
 def handle_vertical_collision(player, objects, dy):
     collided_objects = []
+    on_ice_block = False
+
     for obj in objects:
         if pygame.sprite.collide_mask(player, obj):
             if dy > 0:
@@ -299,7 +285,19 @@ def handle_vertical_collision(player, objects, dy):
 
             collided_objects.append(obj)
 
+            # Check if the player is colliding with an ice block
+            if isinstance(obj, IceBlock):
+                on_ice_block = True
+
+    # If the player is on an ice block, apply automatic movement based on the facing direction
+    if on_ice_block:
+        if player.direction == "left":
+            player.x_vel = -PLAYER_VEL
+        elif player.direction == "right":
+            player.x_vel = PLAYER_VEL
+
     return collided_objects
+
 
 
 def collide(player, objects, dx):
@@ -310,7 +308,6 @@ def collide(player, objects, dx):
         if pygame.sprite.collide_mask(player, obj):
             collided_object = obj
             break
-
     player.move(-dx, 0)
     player.update()
     return collided_object
@@ -324,9 +321,16 @@ def handle_move(player, objects):
     collide_right = collide(player, objects, PLAYER_VEL * 3)
 
     if keys[pygame.K_LEFT] and not collide_left:
-        player.move_left(PLAYER_VEL)
+        if isinstance(collide_left, IceBlock):  # Check if the left collision is an IceBlock
+            player.x_vel = -PLAYER_VEL * 0.6  # Adjust sliding speed as needed
+        else:
+            player.move_left(PLAYER_VEL)
+
     if keys[pygame.K_RIGHT] and not collide_right:
-        player.move_right(PLAYER_VEL)
+        if isinstance(collide_right, IceBlock):  # Check if the right collision is an IceBlock
+            player.x_vel = PLAYER_VEL * 0.6  # Adjust sliding speed as needed
+        else:
+            player.move_right(PLAYER_VEL)
 
     vertical_collide = handle_vertical_collision(player, objects, player.y_vel)
     to_check = [collide_left, collide_right, *vertical_collide]
@@ -334,6 +338,7 @@ def handle_move(player, objects):
     for obj in to_check:
         if obj and obj.name == "fire":
             player.make_hit()
+
 
 
 def main(window):
@@ -362,17 +367,9 @@ def main(window):
     fire6.on()
     fire7.on()
 
-    trap1 = TrapPlatform(-300, 200 - 64, 32, 8)
-    trap2 = TrapPlatform(-600, 600 - 64, 32, 8)
- 
-    trap1.open()
-    trap2.close()
-
     tree = Tree(3500, HEIGHT - block_size - 192, 232)
     tree2 = Tree(3900, HEIGHT - block_size - 192, 232)
 
-
-    
 
     floor = [Floor(i * block_size, HEIGHT - block_size, block_size)
              for i in range((-WIDTH * 2) // block_size, (WIDTH * 3) // block_size)]
@@ -389,6 +386,9 @@ def main(window):
 # Create the third section of floor blocks
     floor3 = [Floor(firstblock_floor3 + i * block_size, HEIGHT - block_size, block_size)
           for i in range(10)]
+    
+    ice_block1 = IceBlock(-1000, HEIGHT - block_size * 2, block_size)
+
     objects = []
 
     
@@ -468,7 +468,8 @@ def main(window):
                         Block(2600, HEIGHT - block_size * 3, block_size),
                         Block(5300, HEIGHT - block_size // 2, block_size),
                         
-                        fire, fire1, fire2, fire3, fire4, fire5, fire6, fire7, trap1, trap2, tree, tree2])
+                        fire, fire1, fire2, fire3, fire4, fire5, fire6, fire7, tree, tree2])
+        objects.append(ice_block1)
 
 
 
@@ -488,11 +489,7 @@ def main(window):
             if isinstance(obj, Fire):
                 obj.loop()
 
-        for obj in objects:
-            if isinstance(obj, TrapPlatform):
-                obj.loop()
-                
-                
+           
         handle_move(player, objects)
         draw(window, background, bg_image, player, objects, offset_x)
 
