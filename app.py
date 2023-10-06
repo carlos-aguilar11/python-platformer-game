@@ -306,13 +306,15 @@ def main(window):
     fire2 = Fire(1100, HEIGHT - block_size - 64, 16, 32)
     fire3 = Fire(1170, HEIGHT - block_size - 64, 16, 32)
     fire4 = Fire(1320, 400 - 64, 16, 32)
-    fire5 = Fire(1320 + block_size * 3, 400 - 64, 16, 32)
+    fire5 = Fire(1600, 400 - 64, 16, 32)
+    fire6 = Fire(2050, HEIGHT - block_size - 64, 16, 32)
     fire.on()
     fire1.on()
     fire2.on()
     fire3.on()
     fire4.on()
     fire5.on()
+    fire6.on()
 
 
 
@@ -324,6 +326,7 @@ def main(window):
     offset_x = 0
     scroll_area_width = 200
 
+# Function to create a section with 2 blocks
     def create_section_2(x, y, size):
         section_blocks = [
           Block(x, y, size),
@@ -372,18 +375,24 @@ def main(window):
         section2_blocks = create_section_3(800, 320, block_size)
         section3_blocks = create_section_4(1300, 400, block_size)
         section_vertical = create_vertical_section(50, HEIGHT - block_size * 2, block_size)
+        section_vertical2= create_vertical_section(1900, HEIGHT - block_size * 2, block_size)
 
         # Extend the 'objects' list 
         objects.extend(section1_blocks)
         objects.extend(section2_blocks)
         objects.extend(section3_blocks)
         objects.extend(section_vertical)
+        objects.extend(section_vertical2)
 
         objects.extend(floor)
         objects.extend([Block(-400, HEIGHT - block_size * 2, block_size), 
                         Block(-200, HEIGHT - block_size * 3, block_size),
-                        Block(1800, HEIGHT - block_size * 3, block_size),  
-                        fire, fire1, fire2, fire3, fire4, fire5])
+                        Block(1800, HEIGHT - block_size * 2, block_size),
+                        Block(2200, HEIGHT - block_size * 3, block_size),
+                        Block(2200, HEIGHT - block_size * 4, block_size),
+                        Block(2600, HEIGHT - block_size * 3, block_size),
+                        
+                        fire, fire1, fire2, fire3, fire4, fire5, fire6])
 
 
 
