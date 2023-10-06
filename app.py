@@ -308,6 +308,7 @@ def main(window):
     fire4 = Fire(1320, 400 - 64, 16, 32)
     fire5 = Fire(1600, 400 - 64, 16, 32)
     fire6 = Fire(2050, HEIGHT - block_size - 64, 16, 32)
+    fire7 = Fire(4800, 300 - 64, 16, 32)
     fire.on()
     fire1.on()
     fire2.on()
@@ -315,11 +316,25 @@ def main(window):
     fire4.on()
     fire5.on()
     fire6.on()
+    fire7.on()
 
-
+    
 
     floor = [Floor(i * block_size, HEIGHT - block_size, block_size)
-             for i in range((-WIDTH * 2) // block_size, (WIDTH * 4) // block_size)]
+             for i in range((-WIDTH * 2) // block_size, (WIDTH * 3) // block_size)]
+    
+    last_x = (len(floor) - 1) * block_size
+    floor2 = [Floor(last_x - 1550 + i * block_size, HEIGHT - block_size, block_size)
+              for i in range(10)]
+    
+    lastblock_floor2 = last_x - 1550 + (10 * block_size)  # Assuming 10 blocks in floor2
+
+# Add the desired spacing (e.g., 450 pixels) to the rightmost point for the third section
+    firstblock_floor3 = lastblock_floor2 + 1250
+
+# Create the third section of floor blocks (floor3)
+    floor3 = [Floor(firstblock_floor3 + i * block_size, HEIGHT - block_size, block_size)
+          for i in range(10)]
     objects = []
 
     
@@ -374,6 +389,8 @@ def main(window):
         section1_blocks = create_section_2(300, 400, block_size)
         section2_blocks = create_section_3(800, 320, block_size)
         section3_blocks = create_section_4(1300, 400, block_size)
+        section4_blocks = create_section_2(4400, 500, block_size)
+        section5_blocks = create_section_4(4600, 300, block_size)
         section_vertical = create_vertical_section(50, HEIGHT - block_size * 2, block_size)
         section_vertical2= create_vertical_section(1900, HEIGHT - block_size * 2, block_size)
 
@@ -381,18 +398,23 @@ def main(window):
         objects.extend(section1_blocks)
         objects.extend(section2_blocks)
         objects.extend(section3_blocks)
+        objects.extend(section4_blocks)
+        objects.extend(section5_blocks)
         objects.extend(section_vertical)
         objects.extend(section_vertical2)
 
         objects.extend(floor)
+        objects.extend(floor2)
+        objects.extend(floor3)
         objects.extend([Block(-400, HEIGHT - block_size * 2, block_size), 
                         Block(-200, HEIGHT - block_size * 3, block_size),
                         Block(1800, HEIGHT - block_size * 2, block_size),
                         Block(2200, HEIGHT - block_size * 3, block_size),
                         Block(2200, HEIGHT - block_size * 4, block_size),
                         Block(2600, HEIGHT - block_size * 3, block_size),
+                        Block(5300, HEIGHT - block_size // 2, block_size),
                         
-                        fire, fire1, fire2, fire3, fire4, fire5, fire6])
+                        fire, fire1, fire2, fire3, fire4, fire5, fire6, fire7])
 
 
 
