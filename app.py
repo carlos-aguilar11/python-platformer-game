@@ -234,7 +234,7 @@ def handle_move(player, objects):
 
 
 def main(window):
-    client_socket = connect_to_server()
+    client_socket, player_id = connect_to_server()
 
     clock = pygame.time.Clock()
     background, bg_image = get_background("Purple.png")
@@ -272,10 +272,10 @@ def main(window):
         send_game_state(client_socket, player.rect.x, player.rect.y)
 
         # Receive and Update Game State from Server
-        updated_x, updated_y = receive_game_state(client_socket)
-
-        player.rect.x = updated_x
-        player.rect.y = updated_y
+        game_state, received_player_id = receive_game_state(client_socket)
+        if received_player_id == player_id:
+            player.rect.x = game_state[player_id]["x"]
+            player.rect.y = game_state[player_id]["y"]
 
         player.loop(FPS)
         handle_move(player, objects)

@@ -7,7 +7,12 @@ client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 def connect_to_server(host="localhost", port=12345):
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     client_socket.connect((host, port))
-    return client_socket
+
+    initial_data = client_socket.recv(1024).decode("utf-8")
+    initial_json_data = json.loads(initial_data)
+    player_id = initial_json_data.get("player_id", "Unknown Player ID")
+
+    return client_socket, player_id
 
 
 def send_game_state(client_socket, x, y):
@@ -23,5 +28,6 @@ def receive_game_state(client_socket):
 
     # extract player_id from the received game state
     player_id = updated_state.get("player_id", "Unknown Player ID")
+    game_state = updated_state.get("game_state", {})
 
-    return updated_state["x"], updated_state["y"], player_id
+    return game_state, player_id

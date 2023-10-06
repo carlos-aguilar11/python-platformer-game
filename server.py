@@ -28,6 +28,10 @@ def handle_client(client_socket, address):
     player_id = f"player_{client_counter}"
     print(f"new connection from {address} as {player_id}")
 
+    initial_data = {"player_id": player_id}
+    initial_json_data = json.dumps(initial_data)
+    client_socket.send(initial_json_data.encode("utf-8"))
+
     while True:
         try:
             # receive data from the client (expeted bytes may need to change from 1024)
@@ -46,7 +50,7 @@ def handle_client(client_socket, address):
             game_state[player_id] = client_state
 
             # Serialize the game state and send it back to the client
-            json_reply = json.dumps(game_state)
+            json_reply = json.dumps({"game_state": game_state, "player_id": player_id})
             client_socket.send(json_reply.encode("utf-8"))
 
             print(f"Received client_state: {client_state}")
