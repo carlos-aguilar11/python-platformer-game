@@ -443,6 +443,7 @@ def main(window):
                 Block(2200, HEIGHT - block_size * 3, block_size),
                 Block(2200, HEIGHT - block_size * 4, block_size),
                 Block(2600, HEIGHT - block_size * 3, block_size),
+                Block(3000, HEIGHT - block_size * 2, block_size),
                 Block(5300, HEIGHT - block_size // 2, block_size),
                 fire,
                 fire1,
