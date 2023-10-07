@@ -58,13 +58,6 @@ def get_block(size):
     surface.blit(image, (0, 0), rect)
     return pygame.transform.scale2x(surface)
 
-def get_icy_block(size):
-    path = join("assets", "Extra", "Surface.png")
-    image = pygame.image.load(path).convert_alpha()
-    surface = pygame.Surface((size, size), pygame.SRCALPHA, 32)
-    rect = pygame.Rect(128, 0, size, size)
-    surface.blit(image, (0, 0), rect)
-    return pygame.transform.scale2x(surface)
 
 def get_floor(size):
     path = join("assets", "Extra", "Grass.png")
@@ -73,6 +66,7 @@ def get_floor(size):
     rect = pygame.Rect(0, 0, size, size)
     surface.blit(image, (0, 0), rect)
     return pygame.transform.scale2x(surface)
+
 
 def get_tree(size):
     path = join("assets", "Extra", "Tree.png")
@@ -99,6 +93,8 @@ class Player(pygame.sprite.Sprite):
         self.animation_count = 0
         self.fall_count = 0
         self.jump_count = 0
+        self.hit = False
+        self.hit_count = 0
         self.sprite = self.SPRITES["idle_right"][0]
 
     def jump(self):
@@ -111,6 +107,9 @@ class Player(pygame.sprite.Sprite):
     def move(self, dx, dy):
         self.rect.x += dx
         self.rect.y += dy
+
+    def make_hit(self):
+        self.hit = True
 
     def move_left(self, vel):
         self.x_vel = -vel
@@ -128,6 +127,12 @@ class Player(pygame.sprite.Sprite):
         self.y_vel += min(1, (self.fall_count / fps) * self.GRAVITY)
         self.move(self.x_vel, self.y_vel)
 
+        if self.hit:
+            self.hit_count += 1
+        if self.hit_count > fps * 2:
+            self.hit = False
+            self.hit_count = 0
+
         self.fall_count += 1
         self.update_sprite()
 
@@ -138,10 +143,12 @@ class Player(pygame.sprite.Sprite):
 
     def hit_head(self):
         self.count = 0
-        self.y_vel * -1
+        self.y_vel *= -1
 
     def update_sprite(self):
         sprite_sheet = "idle"
+        if self.hit:
+            sprite_sheet = "hit"
         if self.y_vel != 0:
             if self.jump_count == 1:
                 sprite_sheet = "jump"
@@ -187,25 +194,21 @@ class Floor(Object):
         self.image.blit(block, (0, 0))
         self.mask = pygame.mask.from_surface(self.image)
 
+
 class Block(Object):
     def __init__(self, x, y, size):
         super().__init__(x, y, size, size)
         block = get_block(size)
         self.image.blit(block, (0, 0))
-        self.mask = pygame.mask.from_surface(self.image)  
+        self.mask = pygame.mask.from_surface(self.image)
 
-class IceBlock(Object):
-   def __init__(self, x, y, size):
-        super().__init__(x, y, size, size)
-        block = get_icy_block(size)
-        self.image.blit(block, (0, 0))
-        self.mask = pygame.mask.from_surface(self.image)  
 
 class Tree(Object):
     def __init__(self, x, y, size):
         super().__init__(x, y, size, size)
         self.image = get_tree(size)
         self.mask = pygame.mask.from_surface(self.image)
+
 
 class Fire(Object):
     ANIMATION_DELAY = 3
@@ -226,8 +229,7 @@ class Fire(Object):
 
     def loop(self):
         sprites = self.fire[self.animation_name]
-        sprite_index = (self.animation_count //
-                        self.ANIMATION_DELAY) % len(sprites)
+        sprite_index = (self.animation_count // self.ANIMATION_DELAY) % len(sprites)
         self.image = sprites[sprite_index]
         self.animation_count += 1
 
@@ -266,8 +268,6 @@ def draw(window, background, bg_image, players, objects, offset_x):
 
 def handle_vertical_collision(player, objects, dy):
     collided_objects = []
-    on_ice_block = False
-
     for obj in objects:
         if pygame.sprite.collide_mask(player, obj):
             if dy > 0:
@@ -279,19 +279,7 @@ def handle_vertical_collision(player, objects, dy):
 
         collided_objects.append(obj)
 
-            # Check if the player is colliding with an ice block
-            if isinstance(obj, IceBlock):
-                on_ice_block = True
-
-    # If the player is on an ice block, apply automatic movement based on the facing direction
-    if on_ice_block:
-        if player.direction == "left":
-            player.x_vel = -PLAYER_VEL
-        elif player.direction == "right":
-            player.x_vel = PLAYER_VEL
-
     return collided_objects
-
 
 
 def collide(player, objects, dx):
@@ -311,27 +299,15 @@ def handle_move(player, objects):
     keys = pygame.key.get_pressed()
 
     player.x_vel = 0
-    collide_left = collide(player, objects, -PLAYER_VEL * 3)
-    collide_right = collide(player, objects, PLAYER_VEL * 3)
+    collide_left = collide(player, objects, -PLAYER_VEL * 2)
+    collide_right = collide(player, objects, PLAYER_VEL * 2)
 
     if keys[pygame.K_LEFT] and not collide_left:
-        if isinstance(collide_left, IceBlock):  # Check if the left collision is an IceBlock
-            player.x_vel = -PLAYER_VEL * 0.6  # Adjust sliding speed as needed
-        else:
-            player.move_left(PLAYER_VEL)
-
+        player.move_left(PLAYER_VEL)
     if keys[pygame.K_RIGHT] and not collide_right:
-        if isinstance(collide_right, IceBlock):  # Check if the right collision is an IceBlock
-            player.x_vel = PLAYER_VEL * 0.6  # Adjust sliding speed as needed
-        else:
-            player.move_right(PLAYER_VEL)
+        player.move_right(PLAYER_VEL)
 
-    vertical_collide = handle_vertical_collision(player, objects, player.y_vel)
-    to_check = [collide_left, collide_right, *vertical_collide]
-
-    for obj in to_check:
-        if obj and obj.name == "fire":
-            player.make_hit()
+    handle_vertical_collision(player, objects, player.y_vel)
 
 
 def main(window):
@@ -365,28 +341,30 @@ def main(window):
     tree = Tree(3500, HEIGHT - block_size - 192, 232)
     tree2 = Tree(3900, HEIGHT - block_size - 192, 232)
 
+    floor = [
+        Floor(i * block_size, HEIGHT - block_size, block_size)
+        for i in range((-WIDTH * 2) // block_size, (WIDTH * 3) // block_size)
+    ]
 
-    floor = [Floor(i * block_size, HEIGHT - block_size, block_size)
-             for i in range((-WIDTH * 2) // block_size, (WIDTH * 3) // block_size)]
-    
     last_x = (len(floor) - 1) * block_size
-    floor2 = [Floor(last_x - 1550 + i * block_size, HEIGHT - block_size, block_size)
-              for i in range(10)]
-    
-    lastblock_floor2 = last_x - 1550 + (10 * block_size) 
+    floor2 = [
+        Floor(last_x - 1550 + i * block_size, HEIGHT - block_size, block_size)
+        for i in range(10)
+    ]
 
-# Add the desired spacing 
+    lastblock_floor2 = last_x - 1550 + (10 * block_size)
+
+    # Add the desired spacing
 
     firstblock_floor3 = lastblock_floor2 + 1250
 
-# Create the third section of floor blocks
-    floor3 = [Floor(firstblock_floor3 + i * block_size, HEIGHT - block_size, block_size)
-          for i in range(10)]
-    
-    ice_block1 = IceBlock(-1000, HEIGHT - block_size * 2, block_size)
+    # Create the third section of floor blocks
+    floor3 = [
+        Floor(firstblock_floor3 + i * block_size, HEIGHT - block_size, block_size)
+        for i in range(10)
+    ]
 
     objects = []
-
 
     floor = [
         Block(i * block_size, HEIGHT - block_size, block_size)
@@ -402,43 +380,39 @@ def main(window):
     offset_x = 0
     scroll_area_width = 200
 
-# Function to create a section with 2 blocks
+    # Function to create a section with 2 blocks
     def create_section_2(x, y, size):
-        section_blocks = [
-          Block(x, y, size),
-          Block(x + size, y, size)
-    ]
+        section_blocks = [Block(x, y, size), Block(x + size, y, size)]
         return section_blocks
 
-# Function to create a section with 3 blocks
+    # Function to create a section with 3 blocks
     def create_section_3(x, y, size):
         section_blocks = [
-          Block(x, y, size),
-          Block(x + size, y, size),
-          Block(x + 2 * size, y, size)
-    ]
+            Block(x, y, size),
+            Block(x + size, y, size),
+            Block(x + 2 * size, y, size),
+        ]
         return section_blocks
 
-# Function to create a section with 4 blocks
+    # Function to create a section with 4 blocks
     def create_section_4(x, y, size):
         section_blocks = [
-          Block(x, y, size),
-          Block(x + size, y, size),
-          Block(x + 2 * size, y, size),
-          Block(x + 3 * size, y, size)
-    ]
-        return section_blocks
-    
-# Function to create a vertical section
-    def create_vertical_section(x, y, size):
-        section_blocks = [
-          Block(x, y, size),
-          Block(x, y - size, size),
-          Block(x, y - 2 * size, size),
-          Block(x, y - 3 * size, size)
-    ]
+            Block(x, y, size),
+            Block(x + size, y, size),
+            Block(x + 2 * size, y, size),
+            Block(x + 3 * size, y, size),
+        ]
         return section_blocks
 
+    # Function to create a vertical section
+    def create_vertical_section(x, y, size):
+        section_blocks = [
+            Block(x, y, size),
+            Block(x, y - size, size),
+            Block(x, y - 2 * size, size),
+            Block(x, y - 3 * size, size),
+        ]
+        return section_blocks
 
     run = True
     while run:
@@ -446,16 +420,20 @@ def main(window):
 
         objects.clear()
 
-         # Add sections of blocks
+        # Add sections of blocks
         section1_blocks = create_section_2(300, 400, block_size)
         section2_blocks = create_section_3(800, 320, block_size)
         section3_blocks = create_section_4(1300, 400, block_size)
         section4_blocks = create_section_2(4400, 500, block_size)
         section5_blocks = create_section_4(4600, 300, block_size)
-        section_vertical = create_vertical_section(50, HEIGHT - block_size * 2, block_size)
-        section_vertical2= create_vertical_section(1900, HEIGHT - block_size * 2, block_size)
+        section_vertical = create_vertical_section(
+            50, HEIGHT - block_size * 2, block_size
+        )
+        section_vertical2 = create_vertical_section(
+            1900, HEIGHT - block_size * 2, block_size
+        )
 
-        # Extend the 'objects' list 
+        # Extend the 'objects' list
         objects.extend(section1_blocks)
         objects.extend(section2_blocks)
         objects.extend(section3_blocks)
@@ -467,18 +445,27 @@ def main(window):
         objects.extend(floor)
         objects.extend(floor2)
         objects.extend(floor3)
-        objects.extend([Block(-400, HEIGHT - block_size * 2, block_size), 
-                        Block(-200, HEIGHT - block_size * 3, block_size),
-                        Block(1800, HEIGHT - block_size * 2, block_size),
-                        Block(2200, HEIGHT - block_size * 3, block_size),
-                        Block(2200, HEIGHT - block_size * 4, block_size),
-                        Block(2600, HEIGHT - block_size * 3, block_size),
-                        Block(5300, HEIGHT - block_size // 2, block_size),
-                        
-                        fire, fire1, fire2, fire3, fire4, fire5, fire6, fire7, tree, tree2])
-        objects.append(ice_block1)
-
-
+        objects.extend(
+            [
+                Block(-400, HEIGHT - block_size * 2, block_size),
+                Block(-200, HEIGHT - block_size * 3, block_size),
+                Block(1800, HEIGHT - block_size * 2, block_size),
+                Block(2200, HEIGHT - block_size * 3, block_size),
+                Block(2200, HEIGHT - block_size * 4, block_size),
+                Block(2600, HEIGHT - block_size * 3, block_size),
+                Block(5300, HEIGHT - block_size // 2, block_size),
+                fire,
+                fire1,
+                fire2,
+                fire3,
+                fire4,
+                fire5,
+                fire6,
+                fire7,
+                tree,
+                tree2,
+            ]
+        )
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -508,7 +495,6 @@ def main(window):
             if isinstance(obj, Fire):
                 obj.loop()
 
-           
         handle_move(player, objects)
         draw(
             window, background, bg_image, list(all_players.values()), objects, offset_x
@@ -524,8 +510,6 @@ def main(window):
         ):
             offset_x += player.x_vel
 
-       
-     
     pygame.quit()
     quit()
 
