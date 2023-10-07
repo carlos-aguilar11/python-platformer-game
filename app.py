@@ -51,12 +51,30 @@ def load_sprite_sheets(dir1, dir2, width, height, direction=False):
 
 
 def get_block(size):
-    path = join("assets", "Terrain", "Terrain.png")
+    path = join("assets", "Extra", "Box.png")
     image = pygame.image.load(path).convert_alpha()
     surface = pygame.Surface((size, size), pygame.SRCALPHA, 32)
-    rect = pygame.Rect(96, 0, size, size)
+    rect = pygame.Rect(0, 0, size, size)
     surface.blit(image, (0, 0), rect)
     return pygame.transform.scale2x(surface)
+
+
+def get_floor(size):
+    path = join("assets", "Extra", "Grass.png")
+    image = pygame.image.load(path).convert_alpha()
+    surface = pygame.Surface((size, size), pygame.SRCALPHA, 32)
+    rect = pygame.Rect(0, 0, size, size)
+    surface.blit(image, (0, 0), rect)
+    return pygame.transform.scale2x(surface)
+
+
+def get_tree(size):
+    path = join("assets", "Extra", "Tree.png")
+    image = pygame.image.load(path).convert_alpha()
+    surface = pygame.Surface((size, size), pygame.SRCALPHA, 32)
+    rect = pygame.Rect(0, 0, size, size)
+    surface.blit(image, (0, 0), rect)
+    return surface
 
 
 class Player(pygame.sprite.Sprite):
@@ -75,6 +93,8 @@ class Player(pygame.sprite.Sprite):
         self.animation_count = 0
         self.fall_count = 0
         self.jump_count = 0
+        self.hit = False
+        self.hit_count = 0
         self.sprite = self.SPRITES["idle_right"][0]
 
     def jump(self):
@@ -87,6 +107,9 @@ class Player(pygame.sprite.Sprite):
     def move(self, dx, dy):
         self.rect.x += dx
         self.rect.y += dy
+
+    def make_hit(self):
+        self.hit = True
 
     def move_left(self, vel):
         self.x_vel = -vel
@@ -104,6 +127,12 @@ class Player(pygame.sprite.Sprite):
         self.y_vel += min(1, (self.fall_count / fps) * self.GRAVITY)
         self.move(self.x_vel, self.y_vel)
 
+        if self.hit:
+            self.hit_count += 1
+        if self.hit_count > fps * 2:
+            self.hit = False
+            self.hit_count = 0
+
         self.fall_count += 1
         self.update_sprite()
 
@@ -114,10 +143,12 @@ class Player(pygame.sprite.Sprite):
 
     def hit_head(self):
         self.count = 0
-        self.y_vel * -1
+        self.y_vel *= -1
 
     def update_sprite(self):
         sprite_sheet = "idle"
+        if self.hit:
+            sprite_sheet = "hit"
         if self.y_vel != 0:
             if self.jump_count == 1:
                 sprite_sheet = "jump"
@@ -156,12 +187,57 @@ class Object(pygame.sprite.Sprite):
         win.blit(self.image, (self.rect.x - offset_x, self.rect.y))
 
 
+class Floor(Object):
+    def __init__(self, x, y, size):
+        super().__init__(x, y, size, size)
+        block = get_floor(size)
+        self.image.blit(block, (0, 0))
+        self.mask = pygame.mask.from_surface(self.image)
+
+
 class Block(Object):
     def __init__(self, x, y, size):
         super().__init__(x, y, size, size)
         block = get_block(size)
         self.image.blit(block, (0, 0))
         self.mask = pygame.mask.from_surface(self.image)
+
+
+class Tree(Object):
+    def __init__(self, x, y, size):
+        super().__init__(x, y, size, size)
+        self.image = get_tree(size)
+        self.mask = pygame.mask.from_surface(self.image)
+
+
+class Fire(Object):
+    ANIMATION_DELAY = 3
+
+    def __init__(self, x, y, width, height):
+        super().__init__(x, y, width, height, "fire")
+        self.fire = load_sprite_sheets("Traps", "Fire", width, height)
+        self.image = self.fire["off"][0]
+        self.mask = pygame.mask.from_surface(self.image)
+        self.animation_count = 0
+        self.animation_name = "off"
+
+    def on(self):
+        self.animation_name = "on"
+
+    def off(self):
+        self.animation_name = "off"
+
+    def loop(self):
+        sprites = self.fire[self.animation_name]
+        sprite_index = (self.animation_count // self.ANIMATION_DELAY) % len(sprites)
+        self.image = sprites[sprite_index]
+        self.animation_count += 1
+
+        self.rect = self.image.get_rect(topleft=(self.rect.x, self.rect.y))
+        self.mask = pygame.mask.from_surface(self.image)
+
+        if self.animation_count // self.ANIMATION_DELAY > len(sprites):
+            self.animation_count = 0
 
 
 def get_background(name):
@@ -214,7 +290,6 @@ def collide(player, objects, dx):
         if pygame.sprite.collide_mask(player, obj):
             collided_object = obj
             break
-
     player.move(-dx, 0)
     player.update()
     return collided_object
@@ -239,12 +314,57 @@ def main(window):
     client_socket, player_id = connect_to_server()
 
     clock = pygame.time.Clock()
-    background, bg_image = get_background("Purple.png")
+    background, bg_image = get_background("Sky.png")
 
     block_size = 96
 
     player = Player(100, 100, 50, 50)
     all_players = {player_id: player}
+    # Fires
+    fire = Fire(200, HEIGHT - block_size - 64, 16, 32)
+    fire1 = Fire(600, HEIGHT - block_size - 64, 16, 32)
+    fire2 = Fire(1100, HEIGHT - block_size - 64, 16, 32)
+    fire3 = Fire(1170, HEIGHT - block_size - 64, 16, 32)
+    fire4 = Fire(1320, 400 - 64, 16, 32)
+    fire5 = Fire(1600, 400 - 64, 16, 32)
+    fire6 = Fire(2050, HEIGHT - block_size - 64, 16, 32)
+    fire7 = Fire(4800, 300 - 64, 16, 32)
+    fire.on()
+    fire1.on()
+    fire2.on()
+    fire3.on()
+    fire4.on()
+    fire5.on()
+    fire6.on()
+    fire7.on()
+
+    tree = Tree(3500, HEIGHT - block_size - 192, 232)
+    tree2 = Tree(3900, HEIGHT - block_size - 192, 232)
+
+    floor = [
+        Floor(i * block_size, HEIGHT - block_size, block_size)
+        for i in range((-WIDTH * 2) // block_size, (WIDTH * 3) // block_size)
+    ]
+
+    last_x = (len(floor) - 1) * block_size
+    floor2 = [
+        Floor(last_x - 1550 + i * block_size, HEIGHT - block_size, block_size)
+        for i in range(10)
+    ]
+
+    lastblock_floor2 = last_x - 1550 + (10 * block_size)
+
+    # Add the desired spacing
+
+    firstblock_floor3 = lastblock_floor2 + 1250
+
+    # Create the third section of floor blocks
+    floor3 = [
+        Floor(firstblock_floor3 + i * block_size, HEIGHT - block_size, block_size)
+        for i in range(10)
+    ]
+
+    objects = []
 
     floor = [
         Block(i * block_size, HEIGHT - block_size, block_size)
@@ -260,9 +380,92 @@ def main(window):
     offset_x = 0
     scroll_area_width = 200
 
+    # Function to create a section with 2 blocks
+    def create_section_2(x, y, size):
+        section_blocks = [Block(x, y, size), Block(x + size, y, size)]
+        return section_blocks
+
+    # Function to create a section with 3 blocks
+    def create_section_3(x, y, size):
+        section_blocks = [
+            Block(x, y, size),
+            Block(x + size, y, size),
+            Block(x + 2 * size, y, size),
+        ]
+        return section_blocks
+
+    # Function to create a section with 4 blocks
+    def create_section_4(x, y, size):
+        section_blocks = [
+            Block(x, y, size),
+            Block(x + size, y, size),
+            Block(x + 2 * size, y, size),
+            Block(x + 3 * size, y, size),
+        ]
+        return section_blocks
+
+    # Function to create a vertical section
+    def create_vertical_section(x, y, size):
+        section_blocks = [
+            Block(x, y, size),
+            Block(x, y - size, size),
+            Block(x, y - 2 * size, size),
+            Block(x, y - 3 * size, size),
+        ]
+        return section_blocks
+
     run = True
     while run:
         clock.tick(FPS)
+
+        objects.clear()
+
+        # Add sections of blocks
+        section1_blocks = create_section_2(300, 400, block_size)
+        section2_blocks = create_section_3(800, 320, block_size)
+        section3_blocks = create_section_4(1300, 400, block_size)
+        section4_blocks = create_section_2(4400, 500, block_size)
+        section5_blocks = create_section_4(4600, 300, block_size)
+        section_vertical = create_vertical_section(
+            50, HEIGHT - block_size * 2, block_size
+        )
+        section_vertical2 = create_vertical_section(
+            1900, HEIGHT - block_size * 2, block_size
+        )
+
+        # Extend the 'objects' list
+        objects.extend(section1_blocks)
+        objects.extend(section2_blocks)
+        objects.extend(section3_blocks)
+        objects.extend(section4_blocks)
+        objects.extend(section5_blocks)
+        objects.extend(section_vertical)
+        objects.extend(section_vertical2)
+
+        objects.extend(floor)
+        objects.extend(floor2)
+        objects.extend(floor3)
+        objects.extend(
+            [
+                Block(-400, HEIGHT - block_size * 2, block_size),
+                Block(-200, HEIGHT - block_size * 3, block_size),
+                Block(1800, HEIGHT - block_size * 2, block_size),
+                Block(2200, HEIGHT - block_size * 3, block_size),
+                Block(2200, HEIGHT - block_size * 4, block_size),
+                Block(2600, HEIGHT - block_size * 3, block_size),
+                Block(5300, HEIGHT - block_size // 2, block_size),
+                fire,
+                fire1,
+                fire2,
+                fire3,
+                fire4,
+                fire5,
+                fire6,
+                fire7,
+                tree,
+                tree2,
+            ]
+        )
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -286,6 +489,12 @@ def main(window):
                 all_players[p_id] = new_player
 
         player.loop(FPS)
+
+        # animate fires
+        for obj in objects:
+            if isinstance(obj, Fire):
+                obj.loop()
+
         handle_move(player, objects)
         draw(
             window, background, bg_image, list(all_players.values()), objects, offset_x
