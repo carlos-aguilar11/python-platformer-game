@@ -2,11 +2,16 @@ import os
 import random
 import math
 import pygame
+import socket
+import json
 from os import listdir
 from os.path import isfile, join
+from client import connect_to_server, send_game_state, receive_game_state
+
 pygame.init()
 
 pygame.display.set_caption("Platformer")
+
 
 WIDTH, HEIGHT = 1000, 800
 FPS = 60
@@ -38,6 +43,7 @@ def load_sprite_sheets(dir1, dir2, width, height, direction=False):
         if direction:
             all_sprites[image.replace(".png", "") + "_right"] = sprites
             all_sprites[image.replace(".png", "") + "_left"] = flip(sprites)
+
         else:
             all_sprites[image.replace(".png", "")] = sprites
 
@@ -80,7 +86,7 @@ def get_tree(size):
 class Player(pygame.sprite.Sprite):
     COLOR = (255, 0, 0)
     GRAVITY = 1
-    SPRITES = load_sprite_sheets("MainCharacters", "Pinkman", 32, 32, True)
+    SPRITES = load_sprite_sheets("MainCharacters", "PinkMan", 32, 32, True)
     ANIMATION_DELAY = 3
 
     def __init__(self, x, y, width, height):
@@ -93,22 +99,18 @@ class Player(pygame.sprite.Sprite):
         self.animation_count = 0
         self.fall_count = 0
         self.jump_count = 0
-        self.hit = False
-        self.hit_count = 0
+        self.sprite = self.SPRITES["idle_right"][0]
 
     def jump(self):
         self.y_vel = -self.GRAVITY * 8
         self.animation_count = 0
         self.jump_count += 1
         if self.jump_count == 1:
-            self.fall_count = 0
+            self.count = 0
 
     def move(self, dx, dy):
         self.rect.x += dx
         self.rect.y += dy
-
-    def make_hit(self):
-        self.hit = True
 
     def move_left(self, vel):
         self.x_vel = -vel
@@ -126,12 +128,6 @@ class Player(pygame.sprite.Sprite):
         self.y_vel += min(1, (self.fall_count / fps) * self.GRAVITY)
         self.move(self.x_vel, self.y_vel)
 
-        if self.hit:
-            self.hit_count += 1
-        if self.hit_count > fps * 2:
-            self.hit = False
-            self.hit_count = 0
-
         self.fall_count += 1
         self.update_sprite()
 
@@ -142,13 +138,11 @@ class Player(pygame.sprite.Sprite):
 
     def hit_head(self):
         self.count = 0
-        self.y_vel *= -1
+        self.y_vel * -1
 
     def update_sprite(self):
         sprite_sheet = "idle"
-        if self.hit:
-            sprite_sheet = "hit"
-        elif self.y_vel < 0:
+        if self.y_vel != 0:
             if self.jump_count == 1:
                 sprite_sheet = "jump"
             elif self.jump_count == 2:
@@ -160,8 +154,7 @@ class Player(pygame.sprite.Sprite):
 
         sprite_sheet_name = sprite_sheet + "_" + self.direction
         sprites = self.SPRITES[sprite_sheet_name]
-        sprite_index = (self.animation_count //
-                        self.ANIMATION_DELAY) % len(sprites)
+        sprite_index = (self.animation_count // self.ANIMATION_DELAY) % len(sprites)
         self.sprite = sprites[sprite_index]
         self.animation_count += 1
         self.update()
@@ -258,14 +251,15 @@ def get_background(name):
     return tiles, image
 
 
-def draw(window, background, bg_image, player, objects, offset_x):
+def draw(window, background, bg_image, players, objects, offset_x):
     for tile in background:
         window.blit(bg_image, tile)
 
     for obj in objects:
         obj.draw(window, offset_x)
 
-    player.draw(window, offset_x)
+    for player in players:
+        player.draw(window, offset_x)
 
     pygame.display.update()
 
@@ -283,7 +277,7 @@ def handle_vertical_collision(player, objects, dy):
                 player.rect.top = obj.rect.bottom
                 player.hit_head()
 
-            collided_objects.append(obj)
+        collided_objects.append(obj)
 
             # Check if the player is colliding with an ice block
             if isinstance(obj, IceBlock):
@@ -340,15 +334,16 @@ def handle_move(player, objects):
             player.make_hit()
 
 
-
 def main(window):
+    client_socket, player_id = connect_to_server()
+
     clock = pygame.time.Clock()
     background, bg_image = get_background("Sky.png")
 
     block_size = 96
 
     player = Player(100, 100, 50, 50)
-
+    all_players = {player_id: player}
     # Fires
     fire = Fire(200, HEIGHT - block_size - 64, 16, 32)
     fire1 = Fire(600, HEIGHT - block_size - 64, 16, 32)
@@ -381,6 +376,7 @@ def main(window):
     lastblock_floor2 = last_x - 1550 + (10 * block_size) 
 
 # Add the desired spacing 
+
     firstblock_floor3 = lastblock_floor2 + 1250
 
 # Create the third section of floor blocks
@@ -391,7 +387,18 @@ def main(window):
 
     objects = []
 
-    
+
+    floor = [
+        Block(i * block_size, HEIGHT - block_size, block_size)
+        for i in range(-WIDTH // block_size, WIDTH * 2 // block_size)
+    ]
+
+    objects = [
+        *floor,
+        Block(0, HEIGHT - block_size * 2, block_size),
+        Block(block_size * 3, HEIGHT - block_size * 4, block_size),
+    ]
+
     offset_x = 0
     scroll_area_width = 200
 
@@ -481,6 +488,18 @@ def main(window):
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE and player.jump_count < 2:
                     player.jump()
+        # Send game state to sever
+        send_game_state(client_socket, player.rect.x, player.rect.y)
+
+        # Receive and Update Game State from Server
+        game_state, _ = receive_game_state(client_socket)
+        for p_id, coords in game_state.items():
+            if p_id in all_players:
+                all_players[p_id].rect.x = coords["x"]
+                all_players[p_id].rect.y = coords["y"]
+            else:
+                new_player = Player(coords["x"], coords["y"], 50, 50)
+                all_players[p_id] = new_player
 
         player.loop(FPS)
 
@@ -491,10 +510,18 @@ def main(window):
 
            
         handle_move(player, objects)
-        draw(window, background, bg_image, player, objects, offset_x)
+        draw(
+            window, background, bg_image, list(all_players.values()), objects, offset_x
+        )
 
-        if ((player.rect.right - offset_x >= WIDTH - scroll_area_width) and player.x_vel > 0) or (
-                (player.rect.left - offset_x <= scroll_area_width) and player.x_vel < 0):
+        if (
+            (
+                player.rect.right - offset_x >= WIDTH - scroll_area_width
+                and player.x_vel > 0
+            )
+            or (player.rect.left - offset_x <= scroll_area_width)
+            and player.x_vel < 0
+        ):
             offset_x += player.x_vel
 
        
