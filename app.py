@@ -95,9 +95,8 @@ class Player(pygame.sprite.Sprite):
         self.jump_count = 0
         self.hit = False
         self.hit_count = 0
-        
+
         self.sprite = self.SPRITES["idle_left"][0]
-        
 
     def jump(self):
         self.y_vel = -self.GRAVITY * 9
@@ -349,22 +348,28 @@ def main(window):
     tree = Tree(3500, HEIGHT - block_size - 192, 232)
     tree2 = Tree(3900, HEIGHT - block_size - 192, 232)
 
-    floor = [Floor(i * block_size, HEIGHT - block_size, block_size)
-             for i in range((-WIDTH * 2) // block_size, (WIDTH * 3) // block_size)]
-    
-    last_x = (len(floor) - 1) * block_size
-    floor2 = [Floor(last_x - 1550 + i * block_size, HEIGHT - block_size, block_size)
-              for i in range(10)]
-    
-    lastblock_floor2 = last_x - 1550 + (10 * block_size) 
+    floor = [
+        Floor(i * block_size, HEIGHT - block_size, block_size)
+        for i in range((-WIDTH * 2) // block_size, (WIDTH * 3) // block_size)
+    ]
 
-# Add the desired spacing 
+    last_x = (len(floor) - 1) * block_size
+    floor2 = [
+        Floor(last_x - 1550 + i * block_size, HEIGHT - block_size, block_size)
+        for i in range(10)
+    ]
+
+    lastblock_floor2 = last_x - 1550 + (10 * block_size)
+
+    # Add the desired spacing
     firstblock_floor3 = lastblock_floor2 + 1250
 
-# Create the third section of floor blocks
-    floor3 = [Floor(firstblock_floor3 + i * block_size, HEIGHT - block_size, block_size)
-          for i in range(10)]
-    
+    # Create the third section of floor blocks
+    floor3 = [
+        Floor(firstblock_floor3 + i * block_size, HEIGHT - block_size, block_size)
+        for i in range(10)
+    ]
+
     objects = []
 
     offset_x = 0
@@ -490,6 +495,12 @@ def main(window):
         draw(
             window, background, bg_image, list(all_players.values()), objects, offset_x
         )
+        if player.rect.x >= 5600:
+            font = pygame.font.SysFont(None, 55)
+            win_text = font.render("You Win!", True, (255, 0, 0))
+            window.blit(win_text, (350, 300))
+
+        pygame.display.update()
 
         if (
             (
