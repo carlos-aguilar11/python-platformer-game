@@ -485,10 +485,18 @@ def main(window):
             if isinstance(obj, Fire):
                 obj.loop()
 
+
+
         handle_move(player, objects)
         draw(
             window, background, bg_image, list(all_players.values()), objects, offset_x
         )
+        if player.rect.x >= 300:
+            font = pygame.font.SysFont(None, 55)
+            win_text = font.render('You Win!', True, (255,0,0))
+            window.blit(win_text, (350, 300))
+
+        pygame.display.update()
 
         if (
             (
