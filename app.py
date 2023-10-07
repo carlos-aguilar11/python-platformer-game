@@ -76,6 +76,14 @@ def get_tree(size):
     surface.blit(image, (0, 0), rect)
     return surface
 
+def get_trophy(size):
+    path = join("assets", "Extra", "End.png")
+    image = pygame.image.load(path).convert_alpha()
+    surface = pygame.Surface((size, size), pygame.SRCALPHA, 32)
+    rect = pygame.Rect(0, 0, size, size)
+    surface.blit(image, (0, 0), rect)
+    return surface
+
 
 class Player(pygame.sprite.Sprite):
     COLOR = (255, 0, 0)
@@ -210,6 +218,11 @@ class Tree(Object):
         self.image = get_tree(size)
         self.mask = pygame.mask.from_surface(self.image)
 
+class Trophy(Object):
+    def __init__(self, x, y, size):
+        super().__init__(x, y, size, size)
+        self.image = get_trophy(size)
+        self.mask = pygame.mask.from_surface(self.image)
 
 class Fire(Object):
     ANIMATION_DELAY = 3
@@ -370,6 +383,8 @@ def main(window):
         for i in range(10)
     ]
 
+    trophy =Trophy(6200, HEIGHT - block_size -64, 64)
+
     objects = []
 
     offset_x = 0
@@ -460,6 +475,7 @@ def main(window):
                 fire7,
                 tree,
                 tree2,
+                trophy
             ]
         )
 
@@ -495,7 +511,7 @@ def main(window):
         draw(
             window, background, bg_image, list(all_players.values()), objects, offset_x
         )
-        if player.rect.x >= 5600:
+        if player.rect.x >= 6150:
             font = pygame.font.SysFont(None, 55)
             win_text = font.render("You Win!", True, (255, 0, 0))
             window.blit(win_text, (350, 300))
