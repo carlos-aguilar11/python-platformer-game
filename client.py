@@ -4,7 +4,7 @@ import json
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 
-def connect_to_server(host="localhost", port=12345):
+def connect_to_server(host="0.0.0.0", port=12345):
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     client_socket.connect((host, port))
 

@@ -6,7 +6,7 @@ import json
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 # bind the socket to an address and port
-host = "localhost"
+host = "0.0.0.0"
 port = 12345
 server_socket.bind((host, port))
 
